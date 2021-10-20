@@ -1,0 +1,33 @@
+# for testing purposes - you can just press enter when prompted for password if you want..
+# Create the root signing cert
+
+# run against "classic" powershell. Tested against version 5.1.19041.1151
+
+$root = New-SelfSignedCertificate -Type Custom -KeySpec Signature `
+    -Subject "CN=apim-gw.apimdemo.net" -KeyExportPolicy Exportable `
+    -HashAlgorithm sha256 -KeyLength 4096 `
+    -CertStoreLocation "Cert:\CurrentUser\My" -KeyUsageProperty Sign `
+    -KeyUsage CertSign -NotAfter (get-date).AddYears(5)
+
+# Create the wildcard SSL cert.
+$ssl = New-SelfSignedCertificate -Type Custom -DnsName "*.ahmedsdemo.net","ahmedsdemo.net" `
+    -KeySpec Signature `
+    -Subject "CN=*.ahmedsdemo.net" -KeyExportPolicy Exportable `
+    -HashAlgorithm sha256 -KeyLength 2048 `
+    -CertStoreLocation "Cert:\CurrentUser\My" `
+    -Signer $root
+# Export CER of the root and SSL certs
+Export-Certificate -Type CERT -Cert $root -FilePath .\ahmedsdemo-signing-root.cer
+Export-Certificate -Type CERT -Cert $ssl -FilePath .\ahmedsdemo-ssl.cer
+# Export PFX of the root and SSL certs
+Export-PfxCertificate -Cert $root -FilePath .\ahmedsdemo-signing-root.pfx `
+    -Password (read-host -AsSecureString -Prompt "password")
+Export-PfxCertificate -Cert $ssl -FilePath .\ahmedsdemo-ssl.pfx `
+    -ChainOption BuildChain -Password (read-host -AsSecureString -Prompt "password")
+
+
+$pfx_cert = get-content '.\ahmedsdemo-ssl.pfx' -Encoding Byte
+$base64 = [System.Convert]::ToBase64String($pfx_cert)
+$base64 >> certbase64.txt
+$base64
+

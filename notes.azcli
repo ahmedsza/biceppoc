@@ -1,0 +1,1 @@
+az deployment sub create --location southafricanorth --name 'e2etest7' --template-file wmain.bicep 
